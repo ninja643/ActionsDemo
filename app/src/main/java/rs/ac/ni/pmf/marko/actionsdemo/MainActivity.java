@@ -1,12 +1,17 @@
 package rs.ac.ni.pmf.marko.actionsdemo;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.AlarmClock;
 import android.provider.ContactsContract;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -17,11 +22,11 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.GregorianCalendar;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final int REQUEST_PICK_CONTACT = 1;
+    private static final int PERMISSION_REQUEST = 2;
 
     private Uri selectedContact;
 
@@ -92,8 +97,13 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        String name = getContactName(selectedContact);
+        if(checkReadContactsPermission()) {
+            showContactDetails();
+        }
+    }
 
+    private void showContactDetails() {
+        String name = getContactName(selectedContact);
         List<String> phones = getContactPhones(selectedContact);
 
         StringBuilder sb = new StringBuilder();
@@ -159,5 +169,29 @@ public class MainActivity extends AppCompatActivity {
         }
 
         return result;
+    }
+
+    private boolean checkReadContactsPermission() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) {
+            return true;
+        }
+
+        ActivityCompat.requestPermissions(this, new String[] { Manifest.permission.READ_CONTACTS}, PERMISSION_REQUEST);
+        return false;
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        switch (requestCode) {
+            case PERMISSION_REQUEST:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    showContactDetails();
+                } else {
+                    Toast.makeText(this, "Sorry, you don't have permissiong to read contacts", Toast.LENGTH_SHORT).show();
+                }
+                break;
+            default:
+                super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        }
     }
 }
